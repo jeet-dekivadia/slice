@@ -13,6 +13,9 @@ function App() {
   const [silentSegments, setSilentSegments] = useState<Array<[number, number]>>([]);
   const [editedUrl, setEditedUrl] = useState<string | null>(null);
   const [editRegion, setEditRegion] = useState<{action: string, start?: number, end?: number, duration?: number} | null>(null);
+  const [silenceThresh, setSilenceThresh] = useState(-40);
+  const [minSilenceLen, setMinSilenceLen] = useState(700);
+  const [padding, setPadding] = useState(200);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,7 +51,7 @@ function App() {
     const res = await fetch(`${API_URL}/detect_silence`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ filename: fname }),
+      body: JSON.stringify({ filename: fname, silence_thresh: silenceThresh, min_silence_len: minSilenceLen, padding }),
     });
     const data = await res.json();
     setSilentSegments(data.silent_segments || []);
@@ -61,7 +64,7 @@ function App() {
     const res = await fetch(`${API_URL}/remove_silence`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ filename }),
+      body: JSON.stringify({ filename, silence_thresh: silenceThresh, min_silence_len: minSilenceLen, padding }),
     });
     const data = await res.json();
     if (data.output_filename) {
@@ -209,6 +212,11 @@ function App() {
         </div>
       )}
       {loading && <p>Processing...</p>}
+      <div style={{ margin: '16px 0' }}>
+        <label>Silence Threshold (dB): <input type="number" value={silenceThresh} onChange={e => setSilenceThresh(Number(e.target.value))} style={{ width: 60 }} /></label>
+        <label style={{ marginLeft: 16 }}>Min Silence (ms): <input type="number" value={minSilenceLen} onChange={e => setMinSilenceLen(Number(e.target.value))} style={{ width: 80 }} /></label>
+        <label style={{ marginLeft: 16 }}>Padding (ms): <input type="number" value={padding} onChange={e => setPadding(Number(e.target.value))} style={{ width: 60 }} /></label>
+      </div>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Body
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import os
@@ -29,24 +29,34 @@ async def upload_video(file: UploadFile = File(...)):
     return {"filename": file.filename}
 
 @app.post("/remove_silence")
-async def remove_silence(filename: str):
+async def remove_silence(
+    filename: str = Body(...),
+    silence_thresh: int = Body(-40),
+    min_silence_len: int = Body(700),
+    padding: int = Body(200)
+):
     input_path = os.path.join(UPLOAD_DIR, filename)
     output_path = os.path.join(OUTPUT_DIR, f"nosilence_{filename}")
     if not os.path.exists(input_path):
         raise HTTPException(status_code=404, detail="File not found")
     try:
-        remove_silence_from_video(input_path, output_path)
+        remove_silence_from_video(input_path, output_path, silence_thresh, min_silence_len, padding)
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
     return {"output_filename": f"nosilence_{filename}"}
 
 @app.post("/detect_silence")
-async def detect_silence(filename: str):
+async def detect_silence(
+    filename: str = Body(...),
+    silence_thresh: int = Body(-40),
+    min_silence_len: int = Body(700),
+    padding: int = Body(200)
+):
     input_path = os.path.join(UPLOAD_DIR, filename)
     if not os.path.exists(input_path):
         raise HTTPException(status_code=404, detail="File not found")
     try:
-        segments = detect_silence_segments(input_path)
+        segments = detect_silence_segments(input_path, silence_thresh, min_silence_len, padding)
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
     return {"silent_segments": segments}
