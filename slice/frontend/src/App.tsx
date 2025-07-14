@@ -17,8 +17,12 @@ function App() {
   const [minSilenceLen, setMinSilenceLen] = useState(700);
   const [padding, setPadding] = useState(200);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setMessage(null);
+    setError(null);
     const file = e.target.files?.[0];
     if (file) {
       setVideoFile(file);
@@ -31,44 +35,70 @@ function App() {
   const handleUpload = async () => {
     if (!videoFile) return;
     setLoading(true);
-    const formData = new FormData();
-    formData.append('file', videoFile);
-    const res = await fetch(`${API_URL}/upload`, {
-      method: 'POST',
-      body: formData,
-    });
-    const data = await res.json();
-    setFilename(data.filename);
-    setLoading(false);
-    // Detect silence after upload
-    if (data.filename) {
-      await fetchSilence(data.filename);
+    setMessage(null);
+    setError(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', videoFile);
+      const res = await fetch(`${API_URL}/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+      if (!res.ok) throw new Error('Upload failed');
+      const data = await res.json();
+      setFilename(data.filename);
+      setMessage('Upload successful!');
+      // Detect silence after upload
+      if (data.filename) {
+        await fetchSilence(data.filename);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Upload error');
     }
+    setLoading(false);
   };
 
   const fetchSilence = async (fname: string) => {
     setLoading(true);
-    const res = await fetch(`${API_URL}/detect_silence`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ filename: fname, silence_thresh: silenceThresh, min_silence_len: minSilenceLen, padding }),
-    });
-    const data = await res.json();
-    setSilentSegments(data.silent_segments || []);
+    setMessage(null);
+    setError(null);
+    try {
+      const res = await fetch(`${API_URL}/detect_silence`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: fname, silence_thresh: silenceThresh, min_silence_len: minSilenceLen, padding }),
+      });
+      if (!res.ok) throw new Error('Silence detection failed');
+      const data = await res.json();
+      setSilentSegments(data.silent_segments || []);
+      setMessage('Silence detection complete!');
+    } catch (err: any) {
+      setError(err.message || 'Silence detection error');
+    }
     setLoading(false);
   };
 
   const handleRemoveSilence = async () => {
     if (!filename) return;
     setLoading(true);
-    const res = await fetch(`${API_URL}/remove_silence`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ filename, silence_thresh: silenceThresh, min_silence_len: minSilenceLen, padding }),
-    });
-    const data = await res.json();
-    if (data.output_filename) {
-      setProcessedUrl(`${API_URL}/download/${data.output_filename}`);
+    setMessage(null);
+    setError(null);
+    try {
+      const res = await fetch(`${API_URL}/remove_silence`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename, silence_thresh: silenceThresh, min_silence_len: minSilenceLen, padding }),
+      });
+      if (!res.ok) throw new Error('Silence removal failed');
+      const data = await res.json();
+      if (data.output_filename) {
+        setProcessedUrl(`${API_URL}/download/${data.output_filename}`);
+        setMessage('Silence removed!');
+      } else {
+        setError('Silence removal error');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Silence removal error');
     }
     setLoading(false);
   };
@@ -76,16 +106,24 @@ function App() {
   const handlePromptEdit = async () => {
     if (!filename || !prompt) return;
     setLoading(true);
-    const res = await fetch(`${API_URL}/edit`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ filename, prompt }),
-    });
-    const data = await res.json();
-    if (data.output_filename) {
-      setEditedUrl(`${API_URL}/download/${data.output_filename}`);
-    } else {
-      alert(JSON.stringify(data, null, 2));
+    setMessage(null);
+    setError(null);
+    try {
+      const res = await fetch(`${API_URL}/edit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename, prompt }),
+      });
+      if (!res.ok) throw new Error('Edit failed');
+      const data = await res.json();
+      if (data.output_filename) {
+        setEditedUrl(`${API_URL}/download/${data.output_filename}`);
+        setMessage('Edit applied!');
+      } else {
+        setError(data.message || 'Edit error');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Edit error');
     }
     setLoading(false);
   };
@@ -211,7 +249,13 @@ function App() {
           </button>
         </div>
       )}
-      {loading && <p>Processing...</p>}
+      {loading && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(255,255,255,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="spinner" style={{ width: 60, height: 60, border: '8px solid #eee', borderTop: '8px solid #4f8cff', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+        </div>
+      )}
+      {error && <div style={{ color: 'red', margin: 8 }}>{error}</div>}
+      {message && <div style={{ color: 'green', margin: 8 }}>{message}</div>}
       <div style={{ margin: '16px 0' }}>
         <label>Silence Threshold (dB): <input type="number" value={silenceThresh} onChange={e => setSilenceThresh(Number(e.target.value))} style={{ width: 60 }} /></label>
         <label style={{ marginLeft: 16 }}>Min Silence (ms): <input type="number" value={minSilenceLen} onChange={e => setMinSilenceLen(Number(e.target.value))} style={{ width: 80 }} /></label>
