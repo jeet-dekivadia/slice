@@ -1,8 +1,29 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { Button, TextField, Paper, Typography, Box, Stack, Tooltip, LinearProgress, Alert, AppBar, Toolbar, Container } from '@mui/material';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import UndoIcon from '@mui/icons-material/Undo';
+import RedoIcon from '@mui/icons-material/Redo';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import DownloadIcon from '@mui/icons-material/Download';
+import ContentCutIcon from '@mui/icons-material/ContentCut';
+import VolumeOffIcon from '@mui/icons-material/VolumeOff';
+import HistoryIcon from '@mui/icons-material/History';
+import EditNoteIcon from '@mui/icons-material/EditNote';
+import SilenceIcon from '@mui/icons-material/VolumeMute';
+import FadeIcon from '@mui/icons-material/Gradient';
 import './App.css';
-import Tooltip from '@mui/material/Tooltip';
 
 const API_URL = 'http://localhost:8000';
+
+const theme = createTheme({
+  palette: {
+    primary: { main: '#4f8cff' },
+    secondary: { main: '#ff4081' },
+    background: { default: '#f7f7fa' },
+  },
+  shape: { borderRadius: 12 },
+});
 
 function App() {
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -233,93 +254,156 @@ function App() {
       : processedUrl || editedUrl || videoUrl;
 
   return (
-    <div className="App">
-      <h1>Slice: Agentic Video Editor</h1>
-      <section style={{ width: 420, maxWidth: '95vw', marginBottom: 24, background: '#fff', borderRadius: 12, boxShadow: '0 2px 8px #0001', padding: 20 }}>
-        <h2 style={{ marginTop: 0 }}>1. Upload Video</h2>
-        <Tooltip title="Select a video file to edit" arrow>
-          <input type="file" accept="video/*" onChange={handleFileChange} />
-        </Tooltip>
-        <button onClick={handleUpload} disabled={!videoFile || loading} style={{ marginLeft: 8 }}>Upload</button>
-        {videoUrl && (
-          <button onClick={handleReset} style={{ marginLeft: 12 }}>Reset to Original</button>
-        )}
-        {videoUrl && (
-          <div style={{ marginTop: 12 }}>
-            <h3>Preview</h3>
-            <video ref={videoRef} src={videoUrl} controls width={400} style={{ maxWidth: '100%' }} />
-          </div>
-        )}
-      </section>
-      <section style={{ width: 420, maxWidth: '95vw', marginBottom: 24, background: '#fff', borderRadius: 12, boxShadow: '0 2px 8px #0001', padding: 20 }}>
-        <h2 style={{ marginTop: 0 }}>2. Silence Detection</h2>
-        <div style={{ margin: '16px 0' }}>
-          <Tooltip title="Threshold below which audio is considered silence (dBFS)" arrow>
-            <label>Silence Threshold (dB): <input type="number" value={silenceThresh} onChange={e => setSilenceThresh(Number(e.target.value))} style={{ width: 60 }} /></label>
-          </Tooltip>
-          <Tooltip title="Minimum length of silence to detect (milliseconds)" arrow>
-            <label style={{ marginLeft: 16 }}>Min Silence (ms): <input type="number" value={minSilenceLen} onChange={e => setMinSilenceLen(Number(e.target.value))} style={{ width: 80 }} /></label>
-          </Tooltip>
-          <Tooltip title="Padding to keep around non-silent segments (milliseconds)" arrow>
-            <label style={{ marginLeft: 16 }}>Padding (ms): <input type="number" value={padding} onChange={e => setPadding(Number(e.target.value))} style={{ width: 60 }} /></label>
-          </Tooltip>
-        </div>
-        {filename && (
-          <button onClick={handleRemoveSilence} disabled={loading}>Remove Silence</button>
-        )}
-        {videoUrl && silentSegments.length > 0 && renderTimeline()}
-      </section>
-      <section style={{ width: 420, maxWidth: '95vw', marginBottom: 24, background: '#fff', borderRadius: 12, boxShadow: '0 2px 8px #0001', padding: 20 }}>
-        <h2 style={{ marginTop: 0 }}>3. Edit with Natural Language</h2>
-        {filename && (
-          <div style={{ marginTop: 8 }}>
-            <Tooltip title="Describe your edit, e.g. 'cut from 10 to 20 seconds', 'mute from 5 to 10 seconds', 'fade in for 2 seconds at start'" arrow>
-              <input
-                type="text"
-                placeholder="Edit with natural language..."
-                value={prompt}
-                onChange={handlePromptChange}
-                style={{ width: 300 }}
-              />
-            </Tooltip>
-            <button onClick={handlePromptEdit} disabled={loading || !prompt} style={{ marginLeft: 8 }}>
-              Apply Edit
-            </button>
-          </div>
-        )}
-      </section>
-      <section style={{ width: 420, maxWidth: '95vw', marginBottom: 24, background: '#fff', borderRadius: 12, boxShadow: '0 2px 8px #0001', padding: 20 }}>
-        <h2 style={{ marginTop: 0 }}>4. Edit History</h2>
-        {history.length > 0 && (
-          <div style={{ margin: '12px 0' }}>
-            <Tooltip title="Undo last edit" arrow><button onClick={handleUndo} disabled={historyIndex <= 0}>Undo</button></Tooltip>
-            <Tooltip title="Redo edit" arrow><button onClick={handleRedo} disabled={historyIndex >= history.length - 1}>Redo</button></Tooltip>
-            <span style={{ marginLeft: 12 }}>
-              Version {historyIndex + 1} / {history.length}
-            </span>
-          </div>
-        )}
-        {currentVideoUrl && (
-          <div style={{ marginTop: 20 }}>
-            <h3>Current Video</h3>
-            <video src={currentVideoUrl} controls width={400} style={{ maxWidth: '100%' }} />
-            <div>
-              <a href={currentVideoUrl} download>
-                <button>Download</button>
-              </a>
-            </div>
-          </div>
-        )}
-      </section>
+    <ThemeProvider theme={theme}>
+      <AppBar position="static" sx={{ mb: 2 }}>
+        <Toolbar>
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+            Slice: Agentic Video Editor
+          </Typography>
+        </Toolbar>
+      </AppBar>
+      <Container maxWidth="lg" sx={{ mt: 2 }}>
+        <Stack spacing={2}>
+          <Paper elevation={3} sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>1. Upload Video</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <Tooltip title="Select a video file to edit" arrow>
+                <input type="file" accept="video/*" onChange={handleFileChange} style={{ display: 'none' }} />
+                <Button variant="contained" component="label" startIcon={<CloudUploadIcon />} disabled={!videoFile || loading}>
+                  Upload Video
+                </Button>
+              </Tooltip>
+              <Button variant="outlined" onClick={handleUpload} disabled={!videoFile || loading} sx={{ ml: 1 }}>
+                {loading ? <LinearProgress size={24} /> : 'Upload'}
+              </Button>
+              {videoUrl && (
+                <Button variant="outlined" onClick={handleReset} sx={{ ml: 1 }}>
+                  Reset to Original
+                </Button>
+              )}
+            </Box>
+            {videoUrl && (
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="h6">Preview</Typography>
+                <video ref={videoRef} src={videoUrl} controls width="100%" style={{ maxWidth: '100%' }} />
+              </Box>
+            )}
+          </Paper>
+
+          <Paper elevation={3} sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>2. Silence Detection</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <Tooltip title="Threshold below which audio is considered silence (dBFS)" arrow>
+                <TextField
+                  label="Silence Threshold (dB)"
+                  type="number"
+                  value={silenceThresh}
+                  onChange={e => setSilenceThresh(Number(e.target.value))}
+                  size="small"
+                  sx={{ mr: 2 }}
+                />
+              </Tooltip>
+              <Tooltip title="Minimum length of silence to detect (milliseconds)" arrow>
+                <TextField
+                  label="Min Silence (ms)"
+                  type="number"
+                  value={minSilenceLen}
+                  onChange={e => setMinSilenceLen(Number(e.target.value))}
+                  size="small"
+                  sx={{ mr: 2 }}
+                />
+              </Tooltip>
+              <Tooltip title="Padding to keep around non-silent segments (milliseconds)" arrow>
+                <TextField
+                  label="Padding (ms)"
+                  type="number"
+                  value={padding}
+                  onChange={e => setPadding(Number(e.target.value))}
+                  size="small"
+                />
+              </Tooltip>
+            </Box>
+            {filename && (
+              <Button variant="contained" onClick={handleRemoveSilence} disabled={loading}>
+                {loading ? <LinearProgress size={24} /> : 'Remove Silence'}
+              </Button>
+            )}
+            {videoUrl && silentSegments.length > 0 && renderTimeline()}
+          </Paper>
+
+          <Paper elevation={3} sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>3. Edit with Natural Language</Typography>
+            {filename && (
+              <Box sx={{ mt: 2 }}>
+                <Tooltip title="Describe your edit, e.g. 'cut from 10 to 20 seconds', 'mute from 5 to 10 seconds', 'fade in for 2 seconds at start'" arrow>
+                  <TextField
+                    label="Edit with natural language..."
+                    variant="outlined"
+                    fullWidth
+                    value={prompt}
+                    onChange={handlePromptChange}
+                    multiline
+                    rows={2}
+                    sx={{ mb: 2 }}
+                  />
+                </Tooltip>
+                <Button variant="contained" onClick={handlePromptEdit} disabled={loading || !prompt}>
+                  {loading ? <LinearProgress size={24} /> : 'Apply Edit'}
+                </Button>
+              </Box>
+            )}
+          </Paper>
+
+          <Paper elevation={3} sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>4. Edit History</Typography>
+            {history.length > 0 && (
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Tooltip title="Undo last edit" arrow>
+                  <Button variant="outlined" onClick={handleUndo} disabled={historyIndex <= 0}>
+                    <UndoIcon /> Undo
+                  </Button>
+                </Tooltip>
+                <Tooltip title="Redo edit" arrow>
+                  <Button variant="outlined" onClick={handleRedo} disabled={historyIndex >= history.length - 1}>
+                    <RedoIcon /> Redo
+                  </Button>
+                </Tooltip>
+                <Typography variant="body2" sx={{ ml: 2 }}>
+                  Version {historyIndex + 1} / {history.length}
+                </Typography>
+              </Box>
+            )}
+            {currentVideoUrl && (
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="h6">Current Video</Typography>
+                <video src={currentVideoUrl} controls width="100%" style={{ maxWidth: '100%' }} />
+                <Box sx={{ mt: 2 }}>
+                  <Button variant="outlined" startIcon={<DownloadIcon />}>
+                    <a href={currentVideoUrl} download style={{ textDecoration: 'none', color: 'inherit' }}>
+                      Download
+                    </a>
+                  </Button>
+                </Box>
+              </Box>
+            )}
+          </Paper>
+        </Stack>
+      </Container>
       {loading && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(255,255,255,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div className="spinner" style={{ width: 60, height: 60, border: '8px solid #eee', borderTop: '8px solid #4f8cff', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
         </div>
       )}
-      {error && <div style={{ color: 'red', margin: 8 }}>{error}</div>}
-      {message && <div style={{ color: 'green', margin: 8 }}>{message}</div>}
-    </div>
+      {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
+      {message && <Alert severity="success" sx={{ mt: 2 }}>{message}</Alert>}
+    </ThemeProvider>
   );
 }
 
-export default App;
+export default function WrappedApp() {
+  return (
+    <ThemeProvider theme={theme}>
+      <App />
+    </ThemeProvider>
+  );
+}
