@@ -217,6 +217,15 @@ function App() {
     if (historyIndex < history.length - 1) setHistoryIndex(historyIndex + 1);
   };
 
+  const handleReset = () => {
+    setHistory([]);
+    setHistoryIndex(-1);
+    setProcessedUrl(null);
+    setEditedUrl(null);
+    setMessage('Reset to original video.');
+    setError(null);
+  };
+
   const currentVideoUrl =
     historyIndex >= 0 && history[historyIndex]
       ? history[historyIndex]
@@ -229,6 +238,9 @@ function App() {
       <button onClick={handleUpload} disabled={!videoFile || loading}>
         Upload
       </button>
+      {videoUrl && (
+        <button onClick={handleReset} style={{ marginBottom: 12 }}>Reset to Original</button>
+      )}
       {videoUrl && (
         <div>
           <h3>Preview</h3>
