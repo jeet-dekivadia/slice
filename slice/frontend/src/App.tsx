@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './App.css';
+import Tooltip from '@mui/material/Tooltip';
 
 const API_URL = 'http://localhost:8000';
 
@@ -234,61 +235,82 @@ function App() {
   return (
     <div className="App">
       <h1>Slice: Agentic Video Editor</h1>
-      <input type="file" accept="video/*" onChange={handleFileChange} />
-      <button onClick={handleUpload} disabled={!videoFile || loading}>
-        Upload
-      </button>
-      {videoUrl && (
-        <button onClick={handleReset} style={{ marginBottom: 12 }}>Reset to Original</button>
-      )}
-      {videoUrl && (
-        <div>
-          <h3>Preview</h3>
-          <video ref={videoRef} src={videoUrl} controls width={400} />
-          {silentSegments.length > 0 && renderTimeline()}
-        </div>
-      )}
-      {filename && (
-        <div style={{ marginTop: 20 }}>
-          <button onClick={handleRemoveSilence} disabled={loading}>
-            Remove Silence
-          </button>
-        </div>
-      )}
-      {history.length > 0 && (
-        <div style={{ margin: '12px 0' }}>
-          <button onClick={handleUndo} disabled={historyIndex <= 0}>Undo</button>
-          <button onClick={handleRedo} disabled={historyIndex >= history.length - 1}>Redo</button>
-          <span style={{ marginLeft: 12 }}>
-            Version {historyIndex + 1} / {history.length}
-          </span>
-        </div>
-      )}
-      {currentVideoUrl && (
-        <div style={{ marginTop: 20 }}>
-          <h3>Current Video</h3>
-          <video src={currentVideoUrl} controls width={400} />
-          <div>
-            <a href={currentVideoUrl} download>
-              <button>Download</button>
-            </a>
+      <section style={{ width: 420, maxWidth: '95vw', marginBottom: 24, background: '#fff', borderRadius: 12, boxShadow: '0 2px 8px #0001', padding: 20 }}>
+        <h2 style={{ marginTop: 0 }}>1. Upload Video</h2>
+        <Tooltip title="Select a video file to edit" arrow>
+          <input type="file" accept="video/*" onChange={handleFileChange} />
+        </Tooltip>
+        <button onClick={handleUpload} disabled={!videoFile || loading} style={{ marginLeft: 8 }}>Upload</button>
+        {videoUrl && (
+          <button onClick={handleReset} style={{ marginLeft: 12 }}>Reset to Original</button>
+        )}
+        {videoUrl && (
+          <div style={{ marginTop: 12 }}>
+            <h3>Preview</h3>
+            <video ref={videoRef} src={videoUrl} controls width={400} style={{ maxWidth: '100%' }} />
           </div>
+        )}
+      </section>
+      <section style={{ width: 420, maxWidth: '95vw', marginBottom: 24, background: '#fff', borderRadius: 12, boxShadow: '0 2px 8px #0001', padding: 20 }}>
+        <h2 style={{ marginTop: 0 }}>2. Silence Detection</h2>
+        <div style={{ margin: '16px 0' }}>
+          <Tooltip title="Threshold below which audio is considered silence (dBFS)" arrow>
+            <label>Silence Threshold (dB): <input type="number" value={silenceThresh} onChange={e => setSilenceThresh(Number(e.target.value))} style={{ width: 60 }} /></label>
+          </Tooltip>
+          <Tooltip title="Minimum length of silence to detect (milliseconds)" arrow>
+            <label style={{ marginLeft: 16 }}>Min Silence (ms): <input type="number" value={minSilenceLen} onChange={e => setMinSilenceLen(Number(e.target.value))} style={{ width: 80 }} /></label>
+          </Tooltip>
+          <Tooltip title="Padding to keep around non-silent segments (milliseconds)" arrow>
+            <label style={{ marginLeft: 16 }}>Padding (ms): <input type="number" value={padding} onChange={e => setPadding(Number(e.target.value))} style={{ width: 60 }} /></label>
+          </Tooltip>
         </div>
-      )}
-      {filename && (
-        <div style={{ marginTop: 20 }}>
-          <input
-            type="text"
-            placeholder="Edit with natural language..."
-            value={prompt}
-            onChange={handlePromptChange}
-            style={{ width: 300 }}
-          />
-          <button onClick={handlePromptEdit} disabled={loading || !prompt}>
-            Apply Edit
-          </button>
-        </div>
-      )}
+        {filename && (
+          <button onClick={handleRemoveSilence} disabled={loading}>Remove Silence</button>
+        )}
+        {videoUrl && silentSegments.length > 0 && renderTimeline()}
+      </section>
+      <section style={{ width: 420, maxWidth: '95vw', marginBottom: 24, background: '#fff', borderRadius: 12, boxShadow: '0 2px 8px #0001', padding: 20 }}>
+        <h2 style={{ marginTop: 0 }}>3. Edit with Natural Language</h2>
+        {filename && (
+          <div style={{ marginTop: 8 }}>
+            <Tooltip title="Describe your edit, e.g. 'cut from 10 to 20 seconds', 'mute from 5 to 10 seconds', 'fade in for 2 seconds at start'" arrow>
+              <input
+                type="text"
+                placeholder="Edit with natural language..."
+                value={prompt}
+                onChange={handlePromptChange}
+                style={{ width: 300 }}
+              />
+            </Tooltip>
+            <button onClick={handlePromptEdit} disabled={loading || !prompt} style={{ marginLeft: 8 }}>
+              Apply Edit
+            </button>
+          </div>
+        )}
+      </section>
+      <section style={{ width: 420, maxWidth: '95vw', marginBottom: 24, background: '#fff', borderRadius: 12, boxShadow: '0 2px 8px #0001', padding: 20 }}>
+        <h2 style={{ marginTop: 0 }}>4. Edit History</h2>
+        {history.length > 0 && (
+          <div style={{ margin: '12px 0' }}>
+            <Tooltip title="Undo last edit" arrow><button onClick={handleUndo} disabled={historyIndex <= 0}>Undo</button></Tooltip>
+            <Tooltip title="Redo edit" arrow><button onClick={handleRedo} disabled={historyIndex >= history.length - 1}>Redo</button></Tooltip>
+            <span style={{ marginLeft: 12 }}>
+              Version {historyIndex + 1} / {history.length}
+            </span>
+          </div>
+        )}
+        {currentVideoUrl && (
+          <div style={{ marginTop: 20 }}>
+            <h3>Current Video</h3>
+            <video src={currentVideoUrl} controls width={400} style={{ maxWidth: '100%' }} />
+            <div>
+              <a href={currentVideoUrl} download>
+                <button>Download</button>
+              </a>
+            </div>
+          </div>
+        )}
+      </section>
       {loading && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(255,255,255,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div className="spinner" style={{ width: 60, height: 60, border: '8px solid #eee', borderTop: '8px solid #4f8cff', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
@@ -296,11 +318,6 @@ function App() {
       )}
       {error && <div style={{ color: 'red', margin: 8 }}>{error}</div>}
       {message && <div style={{ color: 'green', margin: 8 }}>{message}</div>}
-      <div style={{ margin: '16px 0' }}>
-        <label>Silence Threshold (dB): <input type="number" value={silenceThresh} onChange={e => setSilenceThresh(Number(e.target.value))} style={{ width: 60 }} /></label>
-        <label style={{ marginLeft: 16 }}>Min Silence (ms): <input type="number" value={minSilenceLen} onChange={e => setMinSilenceLen(Number(e.target.value))} style={{ width: 80 }} /></label>
-        <label style={{ marginLeft: 16 }}>Padding (ms): <input type="number" value={padding} onChange={e => setPadding(Number(e.target.value))} style={{ width: 60 }} /></label>
-      </div>
     </div>
   );
 }
