@@ -103,3 +103,31 @@ def cut_video_segment(input_path, output_path, start, end):
         from moviepy.editor import ColorClip
         blank = ColorClip(size=video.size, color=(0,0,0), duration=1)
         blank.write_videofile(output_path, fps=24, codec="libx264", audio=False, logger=None)
+
+def trim_video(input_path, output_path, start, end):
+    """
+    Trims the video to the segment from start to end (in seconds).
+    """
+    video = VideoFileClip(input_path).subclip(start, end)
+    video.write_videofile(output_path, codec="libx264", audio_codec="aac", logger=None)
+
+def mute_video_segment(input_path, output_path, start, end):
+    """
+    Mutes the audio from start to end seconds in the video.
+    """
+    video = VideoFileClip(input_path)
+    audio = video.audio
+    def mute_audio(get_frame, t):
+        if start <= t <= end:
+            return [0, 0]
+        return get_frame(t)
+    new_audio = audio.fl(mute_audio)
+    video = video.set_audio(new_audio)
+    video.write_videofile(output_path, codec="libx264", audio_codec="aac", logger=None)
+
+def fade_in_video(input_path, output_path, duration):
+    """
+    Adds a fade-in effect to the start of the video for the given duration (seconds).
+    """
+    video = VideoFileClip(input_path).fx(lambda clip: clip.fadein(duration))
+    video.write_videofile(output_path, codec="libx264", audio_codec="aac", logger=None)
