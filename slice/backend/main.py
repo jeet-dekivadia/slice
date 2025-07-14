@@ -2,7 +2,7 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import os
-from video_utils import remove_silence_from_video, detect_silence_segments
+from video_utils import remove_silence_from_video, detect_silence_segments, cut_video_segment
 from nlp_agent import parse_edit_prompt
 
 app = FastAPI()
@@ -53,10 +53,20 @@ async def detect_silence(filename: str):
 
 @app.post("/edit")
 async def edit_video(filename: str, prompt: str):
-    # Placeholder: parse prompt and return dummy response
+    input_path = os.path.join(UPLOAD_DIR, filename)
+    if not os.path.exists(input_path):
+        raise HTTPException(status_code=404, detail="File not found")
     instructions = parse_edit_prompt(prompt)
-    # TODO: Apply instructions to video
-    return {"instructions": instructions, "message": "Edit endpoint not yet implemented"}
+    output_filename = f"edited_{filename}"
+    output_path = os.path.join(OUTPUT_DIR, output_filename)
+    if instructions["action"] == "cut":
+        try:
+            cut_video_segment(input_path, output_path, instructions["start"], instructions["end"])
+        except Exception as e:
+            return JSONResponse(status_code=500, content={"error": str(e)})
+        return {"output_filename": output_filename}
+    # No-op or unknown action
+    return {"instructions": instructions, "message": "Edit action not implemented or not recognized."}
 
 @app.get("/download/{filename}")
 def download_file(filename: str):

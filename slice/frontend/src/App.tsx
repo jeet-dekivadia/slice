@@ -11,6 +11,7 @@ function App() {
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const [silentSegments, setSilentSegments] = useState<Array<[number, number]>>([]);
+  const [editedUrl, setEditedUrl] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -77,8 +78,11 @@ function App() {
       body: JSON.stringify({ filename, prompt }),
     });
     const data = await res.json();
-    // For now, just alert the response
-    alert(JSON.stringify(data, null, 2));
+    if (data.output_filename) {
+      setEditedUrl(`${API_URL}/download/${data.output_filename}`);
+    } else {
+      alert(JSON.stringify(data, null, 2));
+    }
     setLoading(false);
   };
 
@@ -133,6 +137,17 @@ function App() {
           <video src={processedUrl} controls width={400} />
           <div>
             <a href={processedUrl} download>
+              <button>Download</button>
+            </a>
+          </div>
+        </div>
+      )}
+      {editedUrl && (
+        <div style={{ marginTop: 20 }}>
+          <h3>Edited Video</h3>
+          <video src={editedUrl} controls width={400} />
+          <div>
+            <a href={editedUrl} download>
               <button>Download</button>
             </a>
           </div>

@@ -81,3 +81,25 @@ def detect_silence_segments(input_path, silence_thresh=-40, min_silence_len=700,
         if prev_end < total_length:
             silent_segments.append((prev_end / 1000, total_length / 1000))
         return silent_segments
+
+def cut_video_segment(input_path, output_path, start, end):
+    """
+    Cuts the segment from start to end (in seconds) from the video and saves it.
+    """
+    video = VideoFileClip(input_path)
+    # Keep everything except the segment from start to end
+    clips = []
+    if start > 0:
+        clips.append(video.subclip(0, start))
+    if end < video.duration:
+        clips.append(video.subclip(end, video.duration))
+    if clips:
+        from moviepy.editor import concatenate_videoclips
+        final = concatenate_videoclips(clips)
+        final.write_videofile(output_path, codec="libx264", audio_codec="aac", logger=None)
+    else:
+        # If the whole video is cut, output a 1s blank video
+        import numpy as np
+        from moviepy.editor import ColorClip
+        blank = ColorClip(size=video.size, color=(0,0,0), duration=1)
+        blank.write_videofile(output_path, fps=24, codec="libx264", audio=False, logger=None)
