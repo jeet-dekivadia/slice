@@ -74,6 +74,11 @@ async def edit_video(filename: str, prompt: str):
         return JSONResponse(status_code=500, content={"error": str(e)})
     return {"output_filename": output_filename}
 
+@app.post("/parse_prompt")
+async def parse_prompt(prompt: str):
+    instructions = parse_edit_prompt(prompt)
+    return {"instructions": instructions}
+
 @app.get("/download/{filename}")
 def download_file(filename: str):
     file_path = os.path.join(OUTPUT_DIR, filename)

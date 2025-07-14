@@ -12,6 +12,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [silentSegments, setSilentSegments] = useState<Array<[number, number]>>([]);
   const [editedUrl, setEditedUrl] = useState<string | null>(null);
+  const [editRegion, setEditRegion] = useState<{action: string, start?: number, end?: number, duration?: number} | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -86,10 +87,35 @@ function App() {
     setLoading(false);
   };
 
+  const handlePromptChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPrompt(e.target.value);
+    setEditRegion(null);
+    if (e.target.value.trim()) {
+      // Call backend to parse prompt
+      const res = await fetch(`${API_URL}/parse_prompt`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: e.target.value }),
+      });
+      const data = await res.json();
+      setEditRegion(data.instructions);
+    }
+  };
+
   // Timeline rendering helper
   const renderTimeline = () => {
     if (!videoRef.current || !videoRef.current.duration) return null;
     const duration = videoRef.current.duration;
+    // Helper to get color for action
+    const actionColor = (action: string) => {
+      switch (action) {
+        case 'cut': return 'rgba(255,0,0,0.6)';
+        case 'trim': return 'rgba(0,200,0,0.5)';
+        case 'mute': return 'rgba(0,0,255,0.4)';
+        case 'fade_in': return 'rgba(128,0,128,0.4)';
+        default: return 'rgba(0,0,0,0.1)';
+      }
+    };
     return (
       <div style={{ position: 'relative', width: 400, height: 24, background: '#e0e0e0', borderRadius: 8, marginTop: 8 }}>
         {silentSegments.map(([start, end], i) => (
@@ -100,12 +126,27 @@ function App() {
               left: `${(start / duration) * 100}%`,
               width: `${((end - start) / duration) * 100}%`,
               height: '100%',
-              background: 'rgba(255,0,0,0.4)',
+              background: 'rgba(255,0,0,0.2)',
               borderRadius: 8,
             }}
             title={`Silence: ${start.toFixed(2)}s - ${end.toFixed(2)}s`}
           />
         ))}
+        {editRegion && editRegion.action !== 'noop' && (
+          <div
+            style={{
+              position: 'absolute',
+              left: `${((editRegion.start ?? 0) / duration) * 100}%`,
+              width: `${(((editRegion.end ?? (editRegion.duration ?? 0)) - (editRegion.start ?? 0)) / duration) * 100}%`,
+              height: '100%',
+              background: actionColor(editRegion.action),
+              borderRadius: 8,
+              border: '2px solid #333',
+              zIndex: 2,
+            }}
+            title={`Edit: ${editRegion.action}`}
+          />
+        )}
       </div>
     );
   };
@@ -159,7 +200,7 @@ function App() {
             type="text"
             placeholder="Edit with natural language..."
             value={prompt}
-            onChange={e => setPrompt(e.target.value)}
+            onChange={handlePromptChange}
             style={{ width: 300 }}
           />
           <button onClick={handlePromptEdit} disabled={loading || !prompt}>
