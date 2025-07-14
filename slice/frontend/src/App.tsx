@@ -19,6 +19,8 @@ function App() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [history, setHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState<number>(-1);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setMessage(null);
@@ -192,6 +194,34 @@ function App() {
     );
   };
 
+  // Update history after upload, silence removal, or edit
+  useEffect(() => {
+    if (processedUrl) {
+      const newHistory = history.slice(0, historyIndex + 1).concat(processedUrl);
+      setHistory(newHistory);
+      setHistoryIndex(newHistory.length - 1);
+    }
+  }, [processedUrl]);
+  useEffect(() => {
+    if (editedUrl) {
+      const newHistory = history.slice(0, historyIndex + 1).concat(editedUrl);
+      setHistory(newHistory);
+      setHistoryIndex(newHistory.length - 1);
+    }
+  }, [editedUrl]);
+
+  const handleUndo = () => {
+    if (historyIndex > 0) setHistoryIndex(historyIndex - 1);
+  };
+  const handleRedo = () => {
+    if (historyIndex < history.length - 1) setHistoryIndex(historyIndex + 1);
+  };
+
+  const currentVideoUrl =
+    historyIndex >= 0 && history[historyIndex]
+      ? history[historyIndex]
+      : processedUrl || editedUrl || videoUrl;
+
   return (
     <div className="App">
       <h1>Slice: Agentic Video Editor</h1>
@@ -213,23 +243,21 @@ function App() {
           </button>
         </div>
       )}
-      {processedUrl && (
-        <div style={{ marginTop: 20 }}>
-          <h3>Processed Video</h3>
-          <video src={processedUrl} controls width={400} />
-          <div>
-            <a href={processedUrl} download>
-              <button>Download</button>
-            </a>
-          </div>
+      {history.length > 0 && (
+        <div style={{ margin: '12px 0' }}>
+          <button onClick={handleUndo} disabled={historyIndex <= 0}>Undo</button>
+          <button onClick={handleRedo} disabled={historyIndex >= history.length - 1}>Redo</button>
+          <span style={{ marginLeft: 12 }}>
+            Version {historyIndex + 1} / {history.length}
+          </span>
         </div>
       )}
-      {editedUrl && (
+      {currentVideoUrl && (
         <div style={{ marginTop: 20 }}>
-          <h3>Edited Video</h3>
-          <video src={editedUrl} controls width={400} />
+          <h3>Current Video</h3>
+          <video src={currentVideoUrl} controls width={400} />
           <div>
-            <a href={editedUrl} download>
+            <a href={currentVideoUrl} download>
               <button>Download</button>
             </a>
           </div>
