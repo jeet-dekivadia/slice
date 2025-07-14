@@ -3,6 +3,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import os
 from video_utils import remove_silence_from_video
+from nlp_agent import parse_edit_prompt
 
 app = FastAPI()
 
@@ -38,6 +39,13 @@ async def remove_silence(filename: str):
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
     return {"output_filename": f"nosilence_{filename}"}
+
+@app.post("/edit")
+async def edit_video(filename: str, prompt: str):
+    # Placeholder: parse prompt and return dummy response
+    instructions = parse_edit_prompt(prompt)
+    # TODO: Apply instructions to video
+    return {"instructions": instructions, "message": "Edit endpoint not yet implemented"}
 
 @app.get("/download/{filename}")
 def download_file(filename: str):
