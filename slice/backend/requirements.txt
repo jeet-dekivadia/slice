@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+moviepy
+pydub
+openai
+python-multipart
