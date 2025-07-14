@@ -1,4 +1,4 @@
-THIS SHOULD BE A LINTER ERRORfrom pydub import AudioSegment, silence
+from pydub import AudioSegment, silence
 from moviepy.editor import VideoFileClip, concatenate_videoclips
 import os
 import tempfile
@@ -49,3 +49,35 @@ def remove_silence_from_video(input_path, output_path, silence_thresh=-40, min_s
             final.write_videofile(output_path, codec="libx264", audio_codec="aac", logger=None)
         else:
             video.write_videofile(output_path, codec="libx264", audio_codec="aac", logger=None)
+
+def detect_silence_segments(input_path, silence_thresh=-40, min_silence_len=700, padding=200):
+    """
+    Returns a list of (start, end) times (in seconds) for silent segments in the video.
+    """
+    import tempfile
+    from pydub import AudioSegment, silence
+    from moviepy.editor import VideoFileClip
+    import os
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        audio_path = os.path.join(tmpdir, "audio.wav")
+        video = VideoFileClip(input_path)
+        video.audio.write_audiofile(audio_path, logger=None)
+        audio = AudioSegment.from_wav(audio_path)
+
+        # Detect non-silent chunks
+        nonsilent = silence.detect_nonsilent(audio, min_silence_len=min_silence_len, silence_thresh=silence_thresh)
+        total_length = len(audio)
+        if not nonsilent:
+            return [(0, total_length / 1000)]
+
+        # Invert to get silent segments
+        silent_segments = []
+        prev_end = 0
+        for start, end in nonsilent:
+            if start > prev_end:
+                silent_segments.append((prev_end / 1000, start / 1000))
+            prev_end = end
+        if prev_end < total_length:
+            silent_segments.append((prev_end / 1000, total_length / 1000))
+        return silent_segments

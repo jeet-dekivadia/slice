@@ -2,7 +2,7 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import os
-from video_utils import remove_silence_from_video
+from video_utils import remove_silence_from_video, detect_silence_segments
 from nlp_agent import parse_edit_prompt
 
 app = FastAPI()
@@ -39,6 +39,17 @@ async def remove_silence(filename: str):
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
     return {"output_filename": f"nosilence_{filename}"}
+
+@app.post("/detect_silence")
+async def detect_silence(filename: str):
+    input_path = os.path.join(UPLOAD_DIR, filename)
+    if not os.path.exists(input_path):
+        raise HTTPException(status_code=404, detail="File not found")
+    try:
+        segments = detect_silence_segments(input_path)
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+    return {"silent_segments": segments}
 
 @app.post("/edit")
 async def edit_video(filename: str, prompt: str):
